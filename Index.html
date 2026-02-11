@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>莲花童子心咒精进系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&display=swap');
+    
+    body {
+      font-family: 'Noto Serif SC', serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    .star {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: white;
+      border-radius: 50%;
+      animation: twinkle 3s infinite;
+    }
+    
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.5); }
+    }
+    
+    @keyframes radiancePulse {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    }
+    
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateY(0) scale(0.8); }
+      20% { opacity: 1; }
+      70% { opacity: 0.7; }
+      100% { opacity: 0; transform: translateY(-100px) scale(1); }
+    }
+    
+    .radiance {
+      animation: radiancePulse 1s ease-out;
+    }
+    
+    .float-mantra {
+      animation: floatUp 3s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+  <div class="relative w-full h-screen overflow-hidden bg-gradient-to-b from-[#0a1628] via-[#1a2742] to-[#0f1b33]">
+    <!-- 音效 -->
+    <audio id="audio" preload="auto">
+      <source src="/mnt/user-data/uploads/莲生_1.wav" type="audio/wav">
+    </audio>
+
+    <!-- 星光背景 -->
+    <div id="stars" class="absolute inset-0"></div>
+    
+    <!-- 放射光晕容器 -->
+    <div id="radiance-container" class="absolute inset-0 pointer-events-none"></div>
+    
+    <!-- 飘散咒语容器 -->
+    <div id="mantra-container" class="absolute inset-0 pointer-events-none"></div>
+
+    <!-- 三栏布局 -->
+    <div class="absolute inset-0 flex items-center justify-between px-8">
+      
+      <!-- 左侧：佛珠 -->
+      <div class="w-1/4 flex items-center justify-center">
+        <div class="relative w-80 h-80">
+          <!-- 佛珠圆圈 -->
+          <div id="beads-container" class="relative w-full h-full"></div>
+          
+          <!-- 中心咒语 -->
+          <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+            <div class="text-amber-100 text-base leading-relaxed">
+              嗡。<br>咕噜。<br>莲生。<br>悉地。<br>吽。
+            </div>
+            <div id="bead-progress" class="text-amber-300 text-2xl font-bold mt-4">0/108</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中间：法相 -->
+      <div class="w-2/4 flex items-center justify-center">
+        <div id="deity" class="relative transition-all duration-100" style="opacity: 0.2;">
+          <img src="/mnt/project/師尊2.png" alt="莲花童子法相" class="w-[500px] h-auto select-none" draggable="false">
+        </div>
+      </div>
+
+      <!-- 右侧：今日精进 -->
+      <div class="w-1/4 flex flex-col items-center justify-center gap-8">
+        <div class="text-center">
+          <p class="text-amber-100 text-lg tracking-widest mb-4">今日精进</p>
+          <p id="today-count" class="text-white text-6xl mb-2">0</p>
+          <p class="text-amber-200 text-2xl">/ 100,000 遍</p>
+        </div>
+
+        <div class="w-64">
+          <div class="w-full h-3 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-amber-400 to-amber-200 transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <p id="progress-text" class="text-amber-200/60 text-sm text-center mt-3">还需 100,000 遍</p>
+        </div>
+
+        <div class="text-center mt-4">
+          <p class="text-amber-100/60 text-sm mb-2">累积持诵</p>
+          <p id="total-count" class="text-amber-100 text-3xl">0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部按钮 -->
+    <div class="absolute bottom-12 left-1/2 -translate-x-1/2 z-20">
+      <button id="mantra-button" class="w-64 h-64 rounded-full bg-gradient-to-br from-amber-600/30 to-amber-800/30 
+                   border-2 border-amber-400/40 backdrop-blur-md
+                   flex items-center justify-center
+                   shadow-[0_0_40px_rgba(251,191,36,0.3)]
+                   cursor-pointer select-none
+                   transition-transform duration-100
+                   hover:scale-105 active:scale-95">
+        <span class="text-amber-100 text-xl tracking-wide text-center leading-relaxed px-8">持咒计数</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const DAILY_GOAL = 100000;
+    const TOTAL_BEADS = 108;
+    const MANTRA_TEXT = "嗡。咕噜。莲生。悉地。吽。";
+    
+    let totalCount = 0;
+    let todayCount = 0;
+    let currentBead = 0;
+    let beadElements = [];
+    
+    // 初始化星光
+    const starsContainer = document.getElementById('stars');
+    for (let i = 0; i < 50; i++) {
+      const star = document.createElement('div');
+      star.className = 'star';
+      star.style.left = Math.random() * 100 + '%';
+      star.style.top = Math.random() * 100 + '%';
+      star.style.animationDelay = Math.random() * 2 + 's';
+      star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      starsContainer.appendChild(star);
+    }
+    
+    // 初始化佛珠
+    const beadsContainer = document.getElementById('beads-container');
+    for (let i = 0; i < TOTAL_BEADS; i++) {
+      const angle = (i * 360) / TOTAL_BEADS - 90;
+      const radian = (angle * Math.PI) / 180;
+      const radius = 140;
+      const x = Math.cos(radian) * radius;
+      const y = Math.sin(radian) * radius;
+      
+      const bead = document.createElement('div');
+      bead.className = 'absolute w-3 h-3 rounded-full transition-all duration-300';
+      bead.style.left = '50%';
+      bead.style.top = '50%';
+      bead.style.transform = `translate(${x}px, ${y}px)`;
+      bead.style.backgroundColor = '#78716c';
+      
+      beadsContainer.appendChild(bead);
+      beadElements.push(bead);
+    }
+    
+    // 更新佛珠状态
+    function updateBeads() {
+      beadElements.forEach((bead, i) => {
+        const isActive = i === currentBead;
+        const isPassed = i < currentBead;
+        
+        if (isActive) {
+          bead.style.backgroundColor = '#fbbf24';
+          bead.style.boxShadow = '0 0 15px rgba(251, 191, 36, 0.8)';
+          bead.style.transform = bead.style.transform.replace(/scale\([^)]*\)/, '') + ' scale(1.5)';
+        } else if (isPassed) {
+          bead.style.backgroundColor = '#f59e0b';
+          bead.style.boxShadow = 'none';
+          bead.style.transform = bead.style.transform.replace(/scale\([^)]*\)/, '') + ' scale(1)';
+        } else {
+          bead.style.backgroundColor = '#78716c';
+          bead.style.boxShadow = 'none';
+          bead.style.transform = bead.style.transform.replace(/scale\([^)]*\)/, '') + ' scale(1)';
+        }
+      });
+    }
+    
+    // 加载数据
+    function loadData() {
+      const stored = localStorage.getItem('mantraData');
+      if (stored) {
+        const data = JSON.parse(stored);
+        const today = new Date().toDateString();
+        
+        if (data.date === today) {
+          todayCount = data.todayCount;
+        } else {
+          todayCount = 0;
+          saveData(data.totalCount, 0);
+        }
+        totalCount = data.totalCount;
+        currentBead = todayCount % TOTAL_BEADS;
+      }
+      updateDisplay();
+      updateBeads();
+    }
+    
+    // 保存数据
+    function saveData(newTotal, newToday) {
+      const today = new Date().toDateString();
+      localStorage.setItem('mantraData', JSON.stringify({
+        totalCount: newTotal,
+        todayCount: newToday,
+        date: today
+      }));
+    }
+    
+    // 更新显示
+    function updateDisplay() {
+      document.getElementById('total-count').textContent = totalCount.toLocaleString();
+      document.getElementById('today-count').textContent = todayCount.toLocaleString();
+      document.getElementById('bead-progress').textContent = `${currentBead}/108`;
+      
+      const progressPercentage = Math.min((todayCount / DAILY_GOAL) * 100, 100);
+      document.getElementById('progress-bar').style.width = progressPercentage + '%';
+      
+      if (todayCount >= DAILY_GOAL) {
+        document.getElementById('progress-text').textContent = '✨ 今日目标已达成 ✨';
+      } else {
+        document.getElementById('progress-text').textContent = `还需 ${(DAILY_GOAL - todayCount).toLocaleString()} 遍`;
+      }
+    }
+    
+    // 点击按钮
+    document.getElementById('mantra-button').addEventListener('click', function() {
+      totalCount++;
+      todayCount++;
+      currentBead = todayCount % TOTAL_BEADS;
+      
+      saveData(totalCount, todayCount);
+      updateDisplay();
+      updateBeads();
+      
+      // 播放音效
+      const audio = document.getElementById('audio');
+      audio.currentTime = 0;
+      audio.play().catch(err => console.log('音效播放失败:', err));
+      
+      // 激活法相
+      const deity = document.getElementById('deity');
+      deity.style.opacity = '1';
+      deity.style.transform = 'translateY(-10px)';
+      
+      // 显示放射光晕
+      const radiance = document.createElement('div');
+      radiance.className = 'radiance absolute top-1/2 left-1/2 w-[800px] h-[800px] rounded-full pointer-events-none';
+      radiance.style.background = 'radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0.3) 30%, transparent 70%)';
+      document.getElementById('radiance-container').appendChild(radiance);
+      
+      setTimeout(() => radiance.remove(), 1000);
+      
+      // 创建飘散咒语
+      const mantra = document.createElement('div');
+      mantra.className = 'float-mantra absolute text-amber-300 text-xl pointer-events-none';
+      mantra.textContent = MANTRA_TEXT;
+      mantra.style.left = (Math.random() * 30 + 35) + '%';
+      mantra.style.top = (Math.random() * 30 + 35) + '%';
+      document.getElementById('mantra-container').appendChild(mantra);
+      
+      setTimeout(() => mantra.remove(), 3000);
+      
+      // 1秒后恢复静默
+      setTimeout(() => {
+        deity.style.opacity = '0.2';
+        deity.style.transform = 'translateY(0)';
+      }, 1000);
+    });
+    
+    // 初始化
+    loadData();
+  </script>
+</body>
+</html>
