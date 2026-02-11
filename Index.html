@@ -49,13 +49,31 @@
     .float-mantra {
       animation: floatUp 3s ease-out forwards;
     }
+
+    @media (max-width: 1024px) {
+      .layout-container {
+        flex-direction: column !important;
+        padding: 1rem !important;
+      }
+      .beads-section, .deity-section, .stats-section {
+        width: 100% !important;
+        margin-bottom: 2rem;
+      }
+      .deity-section img {
+        width: 300px !important;
+      }
+      .mantra-button {
+        width: 200px !important;
+        height: 200px !important;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="relative w-full h-screen overflow-hidden bg-gradient-to-b from-[#0a1628] via-[#1a2742] to-[#0f1b33]">
-    <!-- 音效 -->
+    <!-- 音效 - 文件名要和您的音频文件一致 -->
     <audio id="audio" preload="auto">
-      <source src="/mnt/user-data/uploads/莲生_1.wav" type="audio/wav">
+      <source src="./莲生_1.wav" type="audio/wav">
     </audio>
 
     <!-- 星光背景 -->
@@ -68,10 +86,10 @@
     <div id="mantra-container" class="absolute inset-0 pointer-events-none"></div>
 
     <!-- 三栏布局 -->
-    <div class="absolute inset-0 flex items-center justify-between px-8">
+    <div class="layout-container absolute inset-0 flex items-center justify-between px-8">
       
       <!-- 左侧：佛珠 -->
-      <div class="w-1/4 flex items-center justify-center">
+      <div class="beads-section w-1/4 flex items-center justify-center">
         <div class="relative w-80 h-80">
           <!-- 佛珠圆圈 -->
           <div id="beads-container" class="relative w-full h-full"></div>
@@ -86,15 +104,15 @@
         </div>
       </div>
 
-      <!-- 中间：法相 -->
-      <div class="w-2/4 flex items-center justify-center">
+      <!-- 中间：法相 - 文件名要和您的图片文件一致 -->
+      <div class="deity-section w-2/4 flex items-center justify-center">
         <div id="deity" class="relative transition-all duration-100" style="opacity: 0.2;">
-          <img src="/mnt/project/師尊2.png" alt="莲花童子法相" class="w-[500px] h-auto select-none" draggable="false">
+          <img src="./師尊2.png" alt="莲花童子法相" class="w-[500px] h-auto select-none" draggable="false">
         </div>
       </div>
 
       <!-- 右侧：今日精进 -->
-      <div class="w-1/4 flex flex-col items-center justify-center gap-8">
+      <div class="stats-section w-1/4 flex flex-col items-center justify-center gap-8">
         <div class="text-center">
           <p class="text-amber-100 text-lg tracking-widest mb-4">今日精进</p>
           <p id="today-count" class="text-white text-6xl mb-2">0</p>
@@ -117,7 +135,7 @@
 
     <!-- 底部按钮 -->
     <div class="absolute bottom-12 left-1/2 -translate-x-1/2 z-20">
-      <button id="mantra-button" class="w-64 h-64 rounded-full bg-gradient-to-br from-amber-600/30 to-amber-800/30 
+      <button id="mantra-button" class="mantra-button w-64 h-64 rounded-full bg-gradient-to-br from-amber-600/30 to-amber-800/30 
                    border-2 border-amber-400/40 backdrop-blur-md
                    flex items-center justify-center
                    shadow-[0_0_40px_rgba(251,191,36,0.3)]
@@ -195,19 +213,23 @@
     
     // 加载数据
     function loadData() {
-      const stored = localStorage.getItem('mantraData');
-      if (stored) {
-        const data = JSON.parse(stored);
-        const today = new Date().toDateString();
-        
-        if (data.date === today) {
-          todayCount = data.todayCount;
-        } else {
-          todayCount = 0;
-          saveData(data.totalCount, 0);
+      try {
+        const stored = localStorage.getItem('mantraData');
+        if (stored) {
+          const data = JSON.parse(stored);
+          const today = new Date().toDateString();
+          
+          if (data.date === today) {
+            todayCount = data.todayCount;
+          } else {
+            todayCount = 0;
+            saveData(data.totalCount, 0);
+          }
+          totalCount = data.totalCount;
+          currentBead = todayCount % TOTAL_BEADS;
         }
-        totalCount = data.totalCount;
-        currentBead = todayCount % TOTAL_BEADS;
+      } catch (e) {
+        console.log('加载数据失败:', e);
       }
       updateDisplay();
       updateBeads();
@@ -215,12 +237,16 @@
     
     // 保存数据
     function saveData(newTotal, newToday) {
-      const today = new Date().toDateString();
-      localStorage.setItem('mantraData', JSON.stringify({
-        totalCount: newTotal,
-        todayCount: newToday,
-        date: today
-      }));
+      try {
+        const today = new Date().toDateString();
+        localStorage.setItem('mantraData', JSON.stringify({
+          totalCount: newTotal,
+          todayCount: newToday,
+          date: today
+        }));
+      } catch (e) {
+        console.log('保存数据失败:', e);
+      }
     }
     
     // 更新显示
