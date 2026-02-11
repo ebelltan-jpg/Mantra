@@ -50,6 +50,51 @@
       animation: floatUp 3s ease-out forwards;
     }
 
+    /* 佛珠样式 */
+    .bead {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      position: absolute;
+      background: linear-gradient(135deg, #8B4513 0%, #A0522D 50%, #8B4513 100%);
+      box-shadow: inset -2px -2px 4px rgba(0,0,0,0.3), inset 2px 2px 4px rgba(255,255,255,0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .bead.active {
+      background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), inset -2px -2px 4px rgba(0,0,0,0.2);
+      transform: scale(1.3);
+    }
+    
+    .bead.passed {
+      background: linear-gradient(135deg, #DAA520 0%, #B8860B 50%, #DAA520 100%);
+      box-shadow: 0 0 8px rgba(218, 165, 32, 0.4), inset -2px -2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* 佛珠中间的流苏 */
+    .tassel {
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 3px;
+      height: 40px;
+      background: linear-gradient(to bottom, #8B4513, #DAA520);
+    }
+    
+    .tassel::after {
+      content: '';
+      position: absolute;
+      bottom: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 20px;
+      background: radial-gradient(circle, #DAA520 0%, #8B4513 100%);
+      clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    }
+
     @media (max-width: 1024px) {
       .layout-container {
         flex-direction: column !important;
@@ -62,7 +107,7 @@
       .deity-section img {
         width: 300px !important;
       }
-      .mantra-button {
+      .mantra-button-main {
         width: 200px !important;
         height: 200px !important;
       }
@@ -71,7 +116,7 @@
 </head>
 <body>
   <div class="relative w-full h-screen overflow-hidden bg-gradient-to-b from-[#0a1628] via-[#1a2742] to-[#0f1b33]">
-    <!-- 音效 - 文件名要和您的音频文件一致 -->
+    <!-- 音效 -->
     <audio id="audio" preload="auto">
       <source src="./莲生_1.wav" type="audio/wav">
     </audio>
@@ -91,20 +136,20 @@
       <!-- 左侧：佛珠 -->
       <div class="beads-section w-1/4 flex items-center justify-center">
         <div class="relative w-80 h-80">
+          <!-- 流苏 -->
+          <div class="tassel"></div>
+          
           <!-- 佛珠圆圈 -->
           <div id="beads-container" class="relative w-full h-full"></div>
           
-          <!-- 中心咒语 -->
+          <!-- 佛珠计数 -->
           <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-            <div class="text-amber-100 text-base leading-relaxed">
-              嗡。<br>咕噜。<br>莲生。<br>悉地。<br>吽。
-            </div>
-            <div id="bead-progress" class="text-amber-300 text-2xl font-bold mt-4">0/108</div>
+            <div id="bead-progress" class="text-amber-300 text-3xl font-bold">0/108</div>
           </div>
         </div>
       </div>
 
-      <!-- 中间：法相 - 文件名要和您的图片文件一致 -->
+      <!-- 中间：法相 -->
       <div class="deity-section w-2/4 flex items-center justify-center">
         <div id="deity" class="relative transition-all duration-100" style="opacity: 0.2;">
           <img src="./師尊2.png" alt="莲花童子法相" class="w-[500px] h-auto select-none" draggable="false">
@@ -133,16 +178,28 @@
       </div>
     </div>
 
-    <!-- 底部按钮 -->
+    <!-- 底部按钮（完整圆形，咒语在里面） -->
     <div class="absolute bottom-12 left-1/2 -translate-x-1/2 z-20">
-      <button id="mantra-button" class="mantra-button w-64 h-64 rounded-full bg-gradient-to-br from-amber-600/30 to-amber-800/30 
-                   border-2 border-amber-400/40 backdrop-blur-md
+      <button id="mantra-button" class="mantra-button-main w-72 h-72 rounded-full bg-gradient-to-br from-amber-600/40 to-amber-900/40 
+                   border-4 border-amber-400/60 backdrop-blur-md
                    flex items-center justify-center
-                   shadow-[0_0_40px_rgba(251,191,36,0.3)]
+                   shadow-[0_0_60px_rgba(251,191,36,0.5)]
                    cursor-pointer select-none
-                   transition-transform duration-100
-                   hover:scale-105 active:scale-95">
-        <span class="text-amber-100 text-xl tracking-wide text-center leading-relaxed px-8">持咒计数</span>
+                   transition-all duration-150
+                   hover:scale-105 active:scale-95
+                   hover:shadow-[0_0_80px_rgba(251,191,36,0.7)]">
+        <div class="text-center">
+          <div class="text-amber-100 text-xl leading-loose mb-2">
+            嗡。<br>
+            咕噜。<br>
+            莲生。<br>
+            悉地。<br>
+            吽。
+          </div>
+          <div class="text-amber-300 text-lg font-bold mt-3 tracking-widest">
+            持咒计数
+          </div>
+        </div>
       </button>
     </div>
   </div>
@@ -169,21 +226,20 @@
       starsContainer.appendChild(star);
     }
     
-    // 初始化佛珠
+    // 初始化佛珠（更大、更立体）
     const beadsContainer = document.getElementById('beads-container');
     for (let i = 0; i < TOTAL_BEADS; i++) {
       const angle = (i * 360) / TOTAL_BEADS - 90;
       const radian = (angle * Math.PI) / 180;
-      const radius = 140;
+      const radius = 150;
       const x = Math.cos(radian) * radius;
       const y = Math.sin(radian) * radius;
       
       const bead = document.createElement('div');
-      bead.className = 'absolute w-3 h-3 rounded-full transition-all duration-300';
+      bead.className = 'bead';
       bead.style.left = '50%';
       bead.style.top = '50%';
-      bead.style.transform = `translate(${x}px, ${y}px)`;
-      bead.style.backgroundColor = '#78716c';
+      bead.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
       
       beadsContainer.appendChild(bead);
       beadElements.push(bead);
@@ -195,18 +251,12 @@
         const isActive = i === currentBead;
         const isPassed = i < currentBead;
         
+        bead.classList.remove('active', 'passed');
+        
         if (isActive) {
-          bead.style.backgroundColor = '#fbbf24';
-          bead.style.boxShadow = '0 0 15px rgba(251, 191, 36, 0.8)';
-          bead.style.transform = bead.style.transform.replace(/scale\([^)]*\)/, '') + ' scale(1.5)';
+          bead.classList.add('active');
         } else if (isPassed) {
-          bead.style.backgroundColor = '#f59e0b';
-          bead.style.boxShadow = 'none';
-          bead.style.transform = bead.style.transform.replace(/scale\([^)]*\)/, '') + ' scale(1)';
-        } else {
-          bead.style.backgroundColor = '#78716c';
-          bead.style.boxShadow = 'none';
-          bead.style.transform = bead.style.transform.replace(/scale\([^)]*\)/, '') + ' scale(1)';
+          bead.classList.add('passed');
         }
       });
     }
@@ -287,7 +337,7 @@
       
       // 显示放射光晕
       const radiance = document.createElement('div');
-      radiance.className = 'radiance absolute top-1/2 left-1/2 w-[800px] h-[800px] rounded-full pointer-events-none';
+      radiance.className = 'radiance absolute top-1/2 left-1/2 w-[1000px] h-[1000px] rounded-full pointer-events-none';
       radiance.style.background = 'radial-gradient(circle, rgba(255,215,0,0.6) 0%, rgba(255,215,0,0.3) 30%, transparent 70%)';
       document.getElementById('radiance-container').appendChild(radiance);
       
@@ -295,7 +345,7 @@
       
       // 创建飘散咒语
       const mantra = document.createElement('div');
-      mantra.className = 'float-mantra absolute text-amber-300 text-xl pointer-events-none';
+      mantra.className = 'float-mantra absolute text-amber-300 text-2xl pointer-events-none font-bold';
       mantra.textContent = MANTRA_TEXT;
       mantra.style.left = (Math.random() * 30 + 35) + '%';
       mantra.style.top = (Math.random() * 30 + 35) + '%';
